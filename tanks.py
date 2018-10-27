@@ -192,7 +192,7 @@ def oneTurn (tank1box, tank2box, obstacleBox, playerNum, g = 9.8):
         x0 = 0.5 * (tank2box[0] + tank2box[1])
         y0 = 0.5 * (tank2box[2] + tank2box[3])
         v = getNumberInput('Player 2, enter velocity > ', [0, np.inf])
-        theta = getNumberInput('Player 2, enter angle (deg) > ', [180, 360])
+        theta = getNumberInput('Player 2, enter angle (deg) > ', [0, 180])
         drawBoard(tank1box, tank2box, obstacleBox, playerNum)
         tankShot(tank1box, obstacleBox, x0, y0, v, theta)
         
@@ -231,6 +231,7 @@ def playGame(tank1box, tank2box, obstacleBox, g = 9.8):
             playerNum = 2
         if oneTurn(tank1box, tank2box, obstacleBox, playerNum) == 2:
             print('Congratulations, Player 2!')
+            break
         else:
             playerResponse = input('Hit enter to continue')
             while playerResponse != '':
