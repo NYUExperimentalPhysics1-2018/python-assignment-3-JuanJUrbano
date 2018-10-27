@@ -44,8 +44,16 @@ def trajectory (x0,y0,v,theta,g = 9.8, npts = 1000):
     0.5g t^2 - vsin(theta) t - y0 = 0
     t_final = v/g sin(theta) + sqrt((v/g)^2 sin^2(theta) + 2 y0/g)
     """
+    
+    theta = np.deg2rad(theta)
+    vx0 = v * np.cos(theta)
+    vy0 = v * np.sin(theta)
+    tFinal = (vy0/g) + np.sqrt((vy0/g) ** 2 - 2 * (y0/g))
+    t = np.linspace(0, tFinal, npts)
+    x = x0 + vx0 * t
+    y = y0 + vy0 * t - 0.5 * g * t ** 2
+    return x, y
   
-
 def firstInBox (x,y,box):
     """
     finds first index of x,y inside box
@@ -65,9 +73,11 @@ def firstInBox (x,y,box):
         y[j] is in [bottom,top]
         -1 if the line x,y does not go through the box
     """
-
-
-    
+    for j in range(len(x)):
+        if (box[0] <= x[j] <= box[1]) and (box[2] <= y[j] <= box[3]):
+            return j
+    return -1
+            
 
 def tankShot (targetBox, obstacleBox, x0, y0, v, theta, g = 9.8):
     """
@@ -96,9 +106,23 @@ def tankShot (targetBox, obstacleBox, x0, y0, v, theta, g = 9.8):
     obstacle box
     draws the truncated trajectory in current plot window
     """
-    
-
-
+    x, y = trajectory(x0, y0, v, theta) 
+    if firstInBox(x, y, targetBox) == -1:
+        if firstInBox(x, y, obstacleBox) >= 0:
+            x,y = endTrajectoryAtIntersection(x, y, obstacleBox)
+            plt.plot(x, y)
+            showWindow()
+            return 0
+        else:
+            plt.plot(x, y)
+            showWindow()
+            return 0
+    else:
+        x, y = endTrajectoryAtIntersection(x, y, targetBox)
+        plt.plot(x, y)
+        showWindow()
+        return 1
+            
 def drawBoard (tank1box, tank2box, obstacleBox, playerNum):
     """
     draws the game board, pre-shot
@@ -114,8 +138,16 @@ def drawBoard (tank1box, tank2box, obstacleBox, playerNum):
         1 or 2 -- who's turn it is to shoot
  
     """    
-    #your code here
-    
+    plt.clf()
+    drawBox(tank1box, tank1Color)
+    drawBox(tank2box, tank2Color)
+    drawBox(obstacleBox, obstacleColor)
+    plt.xlim(0, 100) 
+    plt.ylim(0, 100)
+    if playerNum == 1:
+        plt.title('Player 1 Turn')
+    else:
+        plt.title('Player 2 Turn')
     showWindow() #this makes the figure window show up
 
 def oneTurn (tank1box, tank2box, obstacleBox, playerNum, g = 9.8):   
@@ -142,10 +174,35 @@ def oneTurn (tank1box, tank2box, obstacleBox, playerNum, g = 9.8):
     prompts player for velocity and angle
     displays trajectory (shot originates from center of tank)
     returns 0 for miss, 1 or 2 for victory
-    """        
-
+    """
+    if playerNum == 1:
+        drawBoard(tank1box, tank2box, obstacleBox, playerNum)
+        x0 = 0.5 * (tank1box[0] + tank1box[1])
+        y0 = 0.5 * (tank1box[2] + tank1box[3])
+        v = getNumberInput('Player 1, enter velocity > ', [0, np.inf])
+        theta = getNumberInput('Player 1, enter angle (deg) > ', [0, 180])
+        drawBoard(tank1box, tank2box, obstacleBox, playerNum)
+        tankShot(tank2box, obstacleBox, x0, y0, v, theta)
+        if tankShot(tank2box, obstacleBox, x0, y0, v, theta) == 1:
+            return playerNum
+        else:
+            return 0
+    else:
+        drawBoard(tank1box, tank2box, obstacleBox, playerNum)
+        x0 = 0.5 * (tank2box[0] + tank2box[1])
+        y0 = 0.5 * (tank2box[2] + tank2box[3])
+        v = getNumberInput('Player 2, enter velocity > ', [0, np.inf])
+        theta = getNumberInput('Player 2, enter angle (deg) > ', [180, 360])
+        drawBoard(tank1box, tank2box, obstacleBox, playerNum)
+        tankShot(tank1box, obstacleBox, x0, y0, v, theta)
+        
+        if tankShot(tank1box, obstacleBox, x0, y0, v, theta) == 1:
+            playerNum
+        else:
+            return 0
+        
+            
     
-
 def playGame(tank1box, tank2box, obstacleBox, g = 9.8):
     """
     parameters
@@ -161,9 +218,25 @@ def playGame(tank1box, tank2box, obstacleBox, g = 9.8):
      g : float 
         accel due to gravity (default 9.8)
     """
-    
-    
-        
+    playerNum = 1
+    while True:
+        if playerNum == 1:
+            if oneTurn(tank1box, tank2box, obstacleBox, playerNum) == 1:
+                print('Congratulations, Player 1!')
+                break
+            else:
+                playerResponse = input('Hit enter to continue')
+                while playerResponse != '':
+                    playerResponse = input('Hit enter to continue')
+            playerNum = 2
+        if oneTurn(tank1box, tank2box, obstacleBox, playerNum) == 2:
+            print('Congratulations, Player 2!')
+        else:
+            playerResponse = input('Hit enter to continue')
+            while playerResponse != '':
+                playerResponse = input('Hit enter to continue')
+            playerNum = 1
+            
 ##### functions provided to you #####
 def getNumberInput (prompt, validRange = [-np.Inf, np.Inf]):
     """displays prompt and converts user input to a number
